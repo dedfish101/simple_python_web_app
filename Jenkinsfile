@@ -28,12 +28,10 @@ pipeline {
             }
         }
 
-        // FINAL stage for Trivy Security Scan
         stage('Security Scan') {
             steps {
                 sh '''
-                    # Specifically scan requirements.txt and output the results as a JSON file.
-                    # This command will no longer fail the build immediately. The plugin will handle it.
+                    # Scan requirements.txt for vulnerabilities
                     trivy fs --format json --output trivy-report.json requirements.txt
                 '''
             }
@@ -42,13 +40,14 @@ pipeline {
 
     post {
         always {
+            // This block contains the final, correct syntax for the Warnings plugin
             recordIssues(
                 tools: [trivy(pattern: 'trivy-report.json')],
                 failOnError: true,
                 qualityGates: [
-                    // The fix is to use 'severity' instead of 'type'
-                    [threshold: 1, severity: 'HIGH', unstable: false],
-                    [threshold: 1, severity: 'CRITICAL', unstable: false]
+                    // FINAL FIX: The parameter is 'type' and the values are uppercase strings
+                    [threshold: 1, type: 'HIGH', unstable: false],
+                    [threshold: 1, type: 'ERROR', unstable: false] // 'ERROR' is used for CRITICAL severity
                 ]
             )
         }
