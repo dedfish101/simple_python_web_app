@@ -27,5 +27,29 @@ pipeline {
                 '''
             }
         }
+
+        // New stage for Trivy Security Scan
+        stage('Security Scan') {
+            steps {
+                sh '''
+                    # Filesystem scan for vulnerabilities, especially in requirements.txt
+                    # Fail the build if any HIGH or CRITICAL severity vulnerabilities are found.
+                    # Output the results as a table in the console log.
+                    trivy fs --exit-code 1 --severity HIGH,CRITICAL --scanners vuln .
+
+                    # Generate an HTML report for archiving.
+                    trivy fs --format template --template "@trivy-ci/html.tpl" -o trivy-report.html .
+                '''
+            }
+        }
+    }
+
+    // This block runs after all stages are complete
+    post {
+        always {
+            // Archive the Trivy report so you can view it from the Jenkins build page
+            echo 'Archiving reports...'
+            archiveArtifacts artifacts: 'trivy-report.html', allowEmptyArchive: true
+        }
     }
 }
