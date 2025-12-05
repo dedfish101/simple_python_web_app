@@ -28,17 +28,14 @@ pipeline {
             }
         }
 
-        stage('Security Scan (AquaSec Trivy)') {
+        stage('Security Scan (Trivy)') {
             steps {
                 sh '''
-                    # FULL AquaSec output in console
-                    echo "=== Running AquaSec Trivy Scan ==="
-                    trivy fs . --severity HIGH,CRITICAL
-
-                    # Save detailed JSON report
-                    trivy fs --format json --output trivy-report.json .
-
-                    echo "=== AquaSec JSON report saved ==="
+                    echo "=== Running Trivy Scan (SARIF) ==="
+                    trivy fs . \
+                      --format sarif \
+                      --output trivy-report.sarif \
+                      --exit-code 0
                 '''
             }
         }
@@ -46,7 +43,13 @@ pipeline {
 
     post {
         always {
-            archiveArtifacts artifacts: 'trivy-report.json', allowEmptyArchive: true
+            recordIssues(
+                id: 'aquasec-trivy',
+                name: 'Aquasec Trivy Warnings',
+                tools: [sarif(pattern: 'trivy-report.sarif')]
+            )
+
+            archiveArtifacts artifacts: 'trivy-report.sarif', allowEmptyArchive: true
         }
     }
 }
