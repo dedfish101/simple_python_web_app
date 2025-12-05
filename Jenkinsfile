@@ -28,46 +28,25 @@ pipeline {
             }
         }
 
-        stage('Security Scan - Trivy FS') {
+        stage('Security Scan (AquaSec Trivy)') {
             steps {
                 sh '''
-                    echo "Running Trivy vulnerability scan on project files..."
+                    # FULL AquaSec output in console
+                    echo "=== Running AquaSec Trivy Scan ==="
+                    trivy fs . --severity HIGH,CRITICAL
 
-                    # This scans the local folder (fs = filesystem)
-                    # --exit-code 0 → build NEVER fails even if vulnerabilities exist
-                    trivy fs \
-                        --format json \
-                        --output trivy-report.json \
-                        --exit-code 0 \
-                        .
+                    # Save detailed JSON report
+                    trivy fs --format json --output trivy-report.json .
+
+                    echo "=== AquaSec JSON report saved ==="
                 '''
             }
         }
-
-        /*
-        stage('Security Scan - Trivy Image') {
-            steps {
-                sh '''
-                    echo "Building Docker image for scanning..."
-                    docker build -t simple_app:latest .
-
-                    echo "Running Trivy scan on Docker image..."
-                    trivy image \
-                        --format json \
-                        --output trivy-image-report.json \
-                        --exit-code 0 \
-                        simple_app:latest
-                '''
-            }
-        }
-        */
     }
 
     post {
         always {
-            echo "Archiving Trivy reports..."
             archiveArtifacts artifacts: 'trivy-report.json', allowEmptyArchive: true
-            // archiveArtifacts artifacts: 'trivy-image-report.json', allowEmptyArchive: true
         }
     }
 }
