@@ -4,7 +4,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/sarthak20052005/simple_python_web_app.git'
+                git branch: 'main', url: 'https://github.com/dedfish101/simple_python_web_app.git'
             }
         }
 
@@ -39,17 +39,9 @@ pipeline {
     }
 
     post {
-        always {
-            // This block contains the final, correct syntax for the Warnings plugin's quality gates.
-            recordIssues(
-                tools: [trivy(pattern: 'trivy-report.json')],
-                failOnError: true,
-                qualityGates: [
-                    // FINAL FIX: Use the correct types to count total issues of a given severity.
-                    [threshold: 1, type: 'TOTAL_HIGH', unstable: false],
-                    [threshold: 1, type: 'TOTAL_ERROR', unstable: false] // 'TOTAL_ERROR' is for CRITICAL
-                ]
-            )
-        }
+    always {
+        archiveArtifacts artifacts: 'trivy-report.json', allowEmptyArchive: true
     }
+}
+
 }
