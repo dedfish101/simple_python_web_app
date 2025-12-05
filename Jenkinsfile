@@ -28,19 +28,46 @@ pipeline {
             }
         }
 
-        stage('Security Scan') {
+        stage('Security Scan - Trivy FS') {
             steps {
                 sh '''
-                    # Scan requirements.txt for vulnerabilities
-                    trivy fs --format json --output trivy-report.json requirements.txt
+                    echo "Running Trivy vulnerability scan on project files..."
+
+                    # This scans the local folder (fs = filesystem)
+                    # --exit-code 0 → build NEVER fails even if vulnerabilities exist
+                    trivy fs \
+                        --format json \
+                        --output trivy-report.json \
+                        --exit-code 0 \
+                        .
                 '''
             }
         }
+
+        /*
+        stage('Security Scan - Trivy Image') {
+            steps {
+                sh '''
+                    echo "Building Docker image for scanning..."
+                    docker build -t simple_app:latest .
+
+                    echo "Running Trivy scan on Docker image..."
+                    trivy image \
+                        --format json \
+                        --output trivy-image-report.json \
+                        --exit-code 0 \
+                        simple_app:latest
+                '''
+            }
+        }
+        */
     }
 
     post {
         always {
+            echo "Archiving Trivy reports..."
             archiveArtifacts artifacts: 'trivy-report.json', allowEmptyArchive: true
+            // archiveArtifacts artifacts: 'trivy-image-report.json', allowEmptyArchive: true
         }
     }
 }
